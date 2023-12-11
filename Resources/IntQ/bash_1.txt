@@ -1,0 +1,137 @@
+Question::: Write a shell script to accept server name and it should monitor vmstat, iostat, mpstat, nmon  and the logs be saved in same script path (Note: capture vmstat, iostat, mpstat every 5secs)
+
+Answer: A shell script that accepts a server name and monitors vmstat, iostat, mpstat, and nmon. The data will be captured every 5 seconds, and the logs will be saved in the same script path:
+
+
+#!/bin/bash
+
+# Check if server name is provided
+if [ -z "$1" ]; then
+  echo "Please provide a server name."
+  exit 1
+fi
+
+server_name=$1
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+
+# Create a directory to save logs
+log_dir="./monitor_logs_$timestamp"
+mkdir -p "$log_dir"
+
+# Monitor vmstat, iostat, mpstat, and nmon
+while true; do
+  # vmstat
+  vmstat 1 5 >> "$log_dir/vmstat_$server_name_$timestamp.log" &
+
+  # iostat
+  iostat -x 1 5 >> "$log_dir/iostat_$server_name_$timestamp.log" &
+
+  # mpstat
+  mpstat 1 5 >> "$log_dir/mpstat_$server_name_$timestamp.log" &
+
+  # nmon
+  nmon -f -s 5 -c 5 -t -F "$log_dir/nmon_$server_name_$timestamp.log" &
+
+  # Monitor for 25 seconds (5 seconds for each utility)
+  sleep 25
+
+  # Stop the monitoring processes
+  pkill -f "vmstat 1"
+  pkill -f "iostat -x"
+  pkill -f "mpstat 1"
+  pkill -f "nmon"
+done
+
+To use this script, save it to a file (e.g., monitor_script.sh), make it executable with chmod +x monitor_script.sh, and run it with the server name as an argument:
+
+bash
+./monitor_script.sh your_server_name
+
+Replace your_server_name with the actual server name you want to monitor. The script will create a directory named monitor_logs_<timestamp> in the current path and save the logs for each monitoring utility with the provided server name and timestamp.
+
+******************************************************************
+
+Question::: Create a  detailed shell script to analyze various sections in AWR report in detail and hightlight any issues
+
+
+Analyzing an AWR (Automatic Workload Repository) report is a detailed task involving multiple sections and parameters. The script below will help you analyze various sections of an AWR report and highlight potential issues based on defined thresholds for some key metrics. It's important to customize the thresholds based on your specific environment and requirements.
+
+-----------------------------
+
+#!/bin/bash
+
+# Check if the AWR report file is provided
+if [ -z "$1" ]; then
+  echo "Please provide the path to the AWR report file."
+  exit 1
+fi
+
+awr_report_file=$1
+
+# Function to analyze and highlight potential issues
+analyze_awr_report() {
+  echo "Analyzing AWR Report: $awr_report_file"
+
+  # Parse AWR report and extract relevant sections
+  # Modify the following to extract the relevant sections from your AWR report
+  # Here, we're just simulating with some dummy sections
+  # Replace this with your actual logic to extract the sections
+  # and analyze the relevant metrics
+  # Below, we're using awk to simulate the extraction
+
+  # Simulate CPU and memory sections
+  echo "=== CPU SECTION ==="
+  cat "$awr_report_file" | awk '/CPU Statistics/{p=1;next}/OS Statistics/{p=0}p' | grep -A 10 "Report Header" | grep -v "Report Header"
+
+  echo "=== MEMORY SECTION ==="
+  cat "$awr_report_file" | awk '/Memory Statistics/{p=1;next}/SQL Statistics/{p=0}p' | grep -A 10 "Report Header" | grep -v "Report Header"
+
+  # Simulate SQL and top SQL sections
+  echo "=== SQL SECTION ==="
+  cat "$awr_report_file" | awk '/SQL ordered/{p=1;next}/SQL ordered/{p=0}p' | grep -A 10 "SQL ordered by Executions" | grep -v "SQL ordered by Executions"
+
+  echo "=== TOP SQL SECTION ==="
+  cat "$awr_report_file" | awk '/SQL ordered/{p=1;next}/SQL ordered/{p=0}p' | grep -A 10 "Plan hash value" | grep -v "Plan hash value"
+
+  # Add more sections and processing as needed
+
+  # Check for potential issues based on defined thresholds
+  # Modify the thresholds as needed for your environment
+  # This is a simulated check, replace with actual checks
+  # For example, check high CPU usage, memory utilization, etc.
+  echo "Checking for potential issues..."
+
+  # Simulated issue: High CPU usage
+  cpu_threshold=90
+  cpu_usage=$(grep -oP 'CPU Statistics\n.*?BEGIN' "$awr_report_file" | grep -oP '(?<=%us)[^\(]+' | sed 's/[[:space:]]//g')
+  if [ "$cpu_usage" -gt "$cpu_threshold" ]; then
+    echo "Potential issue: High CPU usage detected. CPU usage: $cpu_usage%"
+  fi
+
+  # Simulated issue: High memory usage
+  mem_threshold=80
+  mem_usage=$(grep -oP 'Memory Statistics\n.*?BEGIN' "$awr_report_file" | grep -oP '(?<=Memory Usage %)[^\(]+' | sed 's/[[:space:]]//g')
+  if [ "$mem_usage" -gt "$mem_threshold" ]; then
+    echo "Potential issue: High memory usage detected. Memory usage: $mem_usage%"
+  fi
+
+  # Add more issue checks based on your analysis requirements
+
+  echo "Analysis complete."
+}
+
+# Run the analysis
+analyze_awr_report
+
+--------------------------------
+To use this script, save it to a file (e.g., analyze_awr_report.sh), make it executable with chmod +x analyze_awr_report.sh, and run it providing the path to the AWR report file as an argument:
+
+./analyze_awr_report.sh path/to/your/awr_report.txt
+
+Replace path/to/your/awr_report.txt with the actual path to your AWR report. Note that this script uses simulated data and logic to analyze the report sections and highlight potential issues.
+ You'll need to customize the script to extract and analyze the actual sections from your AWR report based on your specific requirements and thresholds for identifying issues.
+
+***********************************************************
+
+
+
